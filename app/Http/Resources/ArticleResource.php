@@ -18,8 +18,8 @@ class ArticleResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
-            'created_at' => (string) $this->created_at,
-            'updated_at' => (string) $this->updated_at,
+            'created_at' => $this->created_at->format('d-m-Y'),
+            'updated_at' => $this->updated_at->format('d-m-Y'),
             'user' => $this->user,
             'average_rating' => $this->ratings->avg('rating')
         ];
