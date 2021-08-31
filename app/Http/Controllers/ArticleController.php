@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ArticleResource;
 use App\Models\Article;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ArticleController extends Controller
@@ -13,9 +14,25 @@ class ArticleController extends Controller
      *
      * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
-    public function index()
+    public function index(Request $request)
     {
-        return ArticleResource::collection(Article::with('ratings')->paginate(25));
+            $query = Article::with('ratings');
+
+            if ($request->filled('start_day')) {
+
+                $date_from = Carbon::parse($request->input('start_day'))->startOfDay();
+                $query->where('created_at', '>=', $date_from);
+
+            }
+
+            if ($request->filled('end_day')) {
+
+                $date_to = Carbon::parse($request->input('end_day'))->endOfDay();
+                $query->where('created_at', '<=', $date_to);
+
+            }
+
+            return ArticleResource::collection($query->paginate());
     }
 
     /**
@@ -26,13 +43,14 @@ class ArticleController extends Controller
      */
     public function store(Request $request)
     {
-        $article = Article::create([
-            'user_id' => $request->user()->id,
-            'title' => $request->title,
-            'description' => $request->description,
-        ]);
+            //only logged-in user
+            $article = Article::create([
+                'user_id' => $request->user()->id,
+                'title' => $request->title,
+                'description' => $request->description,
+            ]);
 
-        return new ArticleResource($article);
+            return new ArticleResource($article);
     }
 
     /**
@@ -55,9 +73,6 @@ class ArticleController extends Controller
      */
     public function update(Request $request, Article $article)
     {
-        if ($request->user()->id !== $article->user_id) {
-            return response()->json(['error' => 'You can only edit your own articles.'], 403);
-        }
 
         $article->update($request->only(['title', 'description']));
 
