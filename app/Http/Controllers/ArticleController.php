@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ArticleFilterRequest;
+use App\Http\Requests\ArticleStoreRequest;
+use App\Http\Requests\ArticleUpdateRequest;
 use App\Http\Resources\ArticleResource;
 use App\Models\Article;
 use Carbon\Carbon;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class ArticleController extends Controller
@@ -14,7 +19,7 @@ class ArticleController extends Controller
      *
      * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
-    public function index(Request $request)
+    public function index(ArticleFilterRequest $request)
     {
             $query = Article::with('ratings');
 
@@ -41,8 +46,10 @@ class ArticleController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return ArticleResource
      */
-    public function store(Request $request)
+    public function store(ArticleStoreRequest $request)
     {
+        try {
+
             //only logged-in user
             $article = Article::create([
                 'user_id' => $request->user()->id,
@@ -50,7 +57,12 @@ class ArticleController extends Controller
                 'description' => $request->description,
             ]);
 
-            return new ArticleResource($article);
+            return (new ArticleResource($article))->response()->setStatusCode(201);
+
+        } catch (Exception $e) {
+
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -71,12 +83,22 @@ class ArticleController extends Controller
      * @param  int  $id
      * @return ArticleResource
      */
-    public function update(Request $request, Article $article)
+    public function update(ArticleUpdateRequest $request, Article $article)
     {
+        try {
 
-        $article->update($request->only(['title', 'description']));
+            $article->update($request->only(['title', 'description']));
 
-        return new ArticleResource($article);
+            return (new ArticleResource($article))->response()->setStatusCode(200);
+
+        } catch (ModelNotFoundException $exception) {
+
+            throw $exception;
+
+        } catch (Exception $e) {
+
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -87,8 +109,18 @@ class ArticleController extends Controller
      */
     public function destroy(Article $article)
     {
-        $article->delete();
+        try {
+            $article->delete();
 
-        return response()->json(null, 204);
+            return response()->json(null, 204);
+
+        } catch (ModelNotFoundException $exception) {
+
+            throw $exception;
+
+        } catch (Exception $e) {
+
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 }
