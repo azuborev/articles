@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ArticleFilterRequest extends FormRequest
 {
@@ -13,7 +15,7 @@ class ArticleFilterRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -28,4 +30,9 @@ class ArticleFilterRequest extends FormRequest
             'end_date'   =>  'nullable|date',
         ];
     }
+
+	protected function failedValidation(Validator $validator)
+	{
+		throw new HttpResponseException(response()->json(['error' => $validator->errors()], 422));
+	}
 }

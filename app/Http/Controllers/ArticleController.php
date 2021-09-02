@@ -21,48 +21,40 @@ class ArticleController extends Controller
      */
     public function index(ArticleFilterRequest $request)
     {
-            $query = Article::with('ratings');
+	    $query = Article::with('ratings');
 
-            if ($request->filled('start_day')) {
+	    if ($request->filled('start_day')) {
 
-                $date_from = Carbon::parse($request->input('start_day'))->startOfDay();
-                $query->where('created_at', '>=', $date_from);
+		    $date_from = Carbon::parse($request->input('start_day'))->startOfDay();
+		    $query->where('created_at', '>=', $date_from);
+	    }
 
-            }
+	    if ($request->filled('end_day')) {
 
-            if ($request->filled('end_day')) {
+		    $date_to = Carbon::parse($request->input('end_day'))->endOfDay();
+		    $query->where('created_at', '<=', $date_to);
+	    }
 
-                $date_to = Carbon::parse($request->input('end_day'))->endOfDay();
-                $query->where('created_at', '<=', $date_to);
+		return ArticleResource::collection($query->paginate());
 
-            }
-
-            return ArticleResource::collection($query->paginate());
     }
 
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return ArticleResource
+     *
+     * @return ArticleResource|\Illuminate\Http\JsonResponse|object
      */
     public function store(ArticleStoreRequest $request)
     {
-        try {
+		$article = Article::create([
+					'user_id'     => $request->user()->id,
+					'title'       => $request->title,
+					'description' => $request->description,
+		]);
 
-            //only logged-in user
-            $article = Article::create([
-                'user_id' => $request->user()->id,
-                'title' => $request->title,
-                'description' => $request->description,
-            ]);
-
-            return (new ArticleResource($article))->response()->setStatusCode(201);
-
-        } catch (Exception $e) {
-
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
+		return (new ArticleResource($article))->response()->setStatusCode(201);
     }
 
     /**
@@ -73,6 +65,7 @@ class ArticleController extends Controller
      */
     public function show(Article $article)
     {
+
         return new ArticleResource($article);
     }
 
@@ -81,24 +74,14 @@ class ArticleController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return ArticleResource
+     *
+     * @return ArticleResource|\Illuminate\Http\JsonResponse|object
      */
     public function update(ArticleUpdateRequest $request, Article $article)
     {
-        try {
+		$article->update($request->only(['title', 'description']));
 
-            $article->update($request->only(['title', 'description']));
-
-            return (new ArticleResource($article))->response()->setStatusCode(200);
-
-        } catch (ModelNotFoundException $exception) {
-
-            throw $exception;
-
-        } catch (Exception $e) {
-
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
+		return (new ArticleResource($article))->response()->setStatusCode(200);
     }
 
     /**
@@ -109,18 +92,8 @@ class ArticleController extends Controller
      */
     public function destroy(Article $article)
     {
-        try {
-            $article->delete();
+	    $article->delete();
 
-            return response()->json(null, 204);
-
-        } catch (ModelNotFoundException $exception) {
-
-            throw $exception;
-
-        } catch (Exception $e) {
-
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
+	    return response()->json( null, 204 );
     }
 }
