@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+		'api_token',
     ];
 
     /**
@@ -31,6 +32,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+		'api_token',
+        'email_verified_at'
     ];
 
     /**
@@ -40,5 +43,12 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'created_at'        => 'date:Y-m-d',
+        'updated_at'        => 'date:Y-m-d',
     ];
+
+    public function articles()
+    {
+        return $this->hasMany(Article::class);
+    }
 }
